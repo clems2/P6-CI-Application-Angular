@@ -1,0 +1,25 @@
+# Dépendances (réinstallées dans l'image via npm ci)
+node_modules
+
+# Artefacts de build (regénérés dans l'image)
+dist
+.angular
+
+# Git & config IDE
+.git
+.gitignore
+.vscode
+.editorconfig
+
+# Fichiers Docker eux-mêmes (inutiles dans le contexte de build)
+Dockerfile
+.dockerignore
+
+# Logs & divers
+npm-debug.log
+*.log
+.DS_Store
+
+# Fichiers hors périmètre de l'exercice (déploiement k8s)
+k8s
+values.tpl.yaml
