@@ -1,0 +1,6 @@
+services:
+  frontend:
+    build: .
+    image: olympic-games-starter
+    ports:
+      - "80:80"
