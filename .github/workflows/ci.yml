@@ -115,13 +115,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
 
-  # ==========================================================================
-  # JOB 3 — RELEASE (nouveau, étape 4)
-  #
-  # semantic-release analyse les commits Conventional Commits, calcule la
-  # version (SemVer), génère le changelog et crée la release GitHub.
-  #  - sur `main`        : release RÉELLE
-  #  - autres branches   : --dry-run (simulation, ne publie rien)
+# ==========================================================================
+  # JOB 3 — RELEASE (mis à jour : + re-tag Docker via exec)
   # ==========================================================================
   release:
     name: Release
@@ -131,9 +126,6 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v4
         with:
-          # fetch-depth: 0 = tout l'historique. semantic-release en a besoin
-          # pour analyser TOUS les commits depuis la dernière release (un
-          # checkout superficiel par défaut ne récupère que le dernier commit).
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -145,10 +137,29 @@ jobs:
       - name: Installer les dépendances
         run: npm ci
 
+      # Connexion à GHCR : nécessaire pour que exec puisse pull/push l'image
+      # au moment du re-tag sémantique.
+      - name: Connexion à GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # On recalcule les mêmes métadonnées que le job build, pour dire à exec
+      # QUELLE image re-taguer. IMAGE_NAME + SOURCE_TAG seront lus par exec
+      # via process.env.
+      - name: Préparer les métadonnées de l'image
+        id: meta
+        run: |
+          IMAGE_NAME="ghcr.io/${GITHUB_REPOSITORY,,}"
+          BRANCH_CLEAN="${GITHUB_REF_NAME//\//-}"
+          SHA_SHORT="${GITHUB_SHA:0:7}"
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> "$GITHUB_ENV"
+          echo "SOURCE_TAG=${BRANCH_CLEAN}-${SHA_SHORT}" >> "$GITHUB_ENV"
+
       - name: Lancer semantic-release (réel sur main, dry-run ailleurs)
         env:
-          # Token fourni à semantic-release pour créer la release GitHub.
-          # Masqué automatiquement dans les logs.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "${GITHUB_REF_NAME}" = "main" ]; then

@@ -9,6 +9,12 @@
         "npmPublish": false
       }
     ],
-    "@semantic-release/github"
+    "@semantic-release/github",
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "docker pull ${process.env.IMAGE_NAME}:${process.env.SOURCE_TAG} && docker tag ${process.env.IMAGE_NAME}:${process.env.SOURCE_TAG} ${process.env.IMAGE_NAME}:${nextRelease.version} && docker push ${process.env.IMAGE_NAME}:${nextRelease.version}"
+      }
+    ]
   ]
 }
